@@ -1,5 +1,6 @@
 package com.internal.tasktracker;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,8 +29,21 @@ public class TaskController {
 
         // Parse status filter
         String normalizedStatus = null;
-        if (status != null && !status.isEmpty()) {
+
+        //        if (status != null && !status.isEmpty()) {
+//            normalizedStatus = TaskStatus.valueOf(status.toUpperCase()).name();
+//        }
+
+        //3rd Bug fixed
+        try {
+            if(status!=null && !status.isEmpty()) {
             normalizedStatus = TaskStatus.valueOf(status.toUpperCase()).name();
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid status " + e.getMessage());
+        }
+        catch (NullPointerException e) {
+            System.out.println("Status cannot be null");
         }
 
         // Query complexity estimation for logging
@@ -47,11 +61,22 @@ public class TaskController {
 
         List<Task> allResults = taskRepository.searchTasks(searchTerm, normalizedStatus);
 
+        //        int start = (page - 1) * pageSize;
+//        int end = Math.min(start + pageSize, allResults.size());
+//        List<Task> pageResults = (start < allResults.size())
+//                ? allResults.subList(start, end)
+//                : Collections.emptyList();
+
+        //2nd Bug after fixing
+        if(page <= 0 || pageSize <= 0) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
         int start = (page - 1) * pageSize;
         int end = Math.min(start + pageSize, allResults.size());
         List<Task> pageResults = (start < allResults.size())
-                ? allResults.subList(start, end)
-                : Collections.emptyList();
+            ? allResults.subList(start, end)
+            : Collections.emptyList();
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("items", pageResults);
